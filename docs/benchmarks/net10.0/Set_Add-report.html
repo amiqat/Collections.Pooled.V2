@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>Collections.Pooled.Benchmarks.PooledSet.Set_Add-20260303-003953</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.7840/25H2/2025Update/HudsonValley2)
+Intel Core i9-14900HX 2.20GHz, 1 CPU, 32 logical and 24 physical cores
+.NET SDK 10.0.103
+  [Host]    : .NET 10.0.3 (10.0.3, 10.0.326.7603), X64 RyuJIT x86-64-v3
+  .NET 10.0 : .NET 10.0.3 (10.0.3, 10.0.326.7603), X64 RyuJIT x86-64-v3
+  .NET 8.0  : .NET 8.0.24 (8.0.24, 8.0.2426.7010), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code>InvocationCount=1  UnrollFactor=1  
+</code></pre>
+
+<table>
+<thead><tr><th>Method </th><th>Job</th><th>Runtime</th><th>CountToAdd</th><th>InitialSetSize</th><th>Mean    </th><th>Error </th><th>StdDev</th><th>Median  </th><th>Ratio</th><th>RatioSD</th><th>Allocated</th><th>Alloc Ratio</th>
+</tr>
+</thead><tbody><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1</td><td>0</td><td>940.0 ns</td><td>65.21 ns</td><td>192.28 ns</td><td>950.0 ns</td><td>1.05</td><td>0.32</td><td>104 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1</td><td>0</td><td>261.2 ns</td><td>28.12 ns</td><td>82.03 ns</td><td>300.0 ns</td><td>0.29</td><td>0.11</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1</td><td>0</td><td>1,248.4 ns</td><td>90.78 ns</td><td>260.47 ns</td><td>1,200.0 ns</td><td>1.04</td><td>0.31</td><td>104 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1</td><td>0</td><td>454.7 ns</td><td>32.86 ns</td><td>94.27 ns</td><td>500.0 ns</td><td>0.38</td><td>0.11</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1</td><td>8000000</td><td>900.0 ns</td><td>117.91 ns</td><td>345.82 ns</td><td>800.0 ns</td><td>1.16</td><td>0.64</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1</td><td>8000000</td><td>917.5 ns</td><td>103.65 ns</td><td>300.70 ns</td><td>900.0 ns</td><td>1.18</td><td>0.61</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1</td><td>8000000</td><td>1,056.1 ns</td><td>114.82 ns</td><td>334.93 ns</td><td>1,000.0 ns</td><td>1.11</td><td>0.51</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1</td><td>8000000</td><td>974.5 ns</td><td>115.48 ns</td><td>336.85 ns</td><td>900.0 ns</td><td>1.02</td><td>0.49</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100</td><td>0</td><td>3,651.0 ns</td><td>154.67 ns</td><td>456.05 ns</td><td>3,600.0 ns</td><td>1.02</td><td>0.18</td><td>5936 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100</td><td>0</td><td>7,216.0 ns</td><td>348.37 ns</td><td>1,027.18 ns</td><td>7,000.0 ns</td><td>2.01</td><td>0.37</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100</td><td>0</td><td>3,362.2 ns</td><td>142.63 ns</td><td>416.05 ns</td><td>3,300.0 ns</td><td>1.02</td><td>0.18</td><td>5936 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100</td><td>0</td><td>7,038.8 ns</td><td>288.95 ns</td><td>842.88 ns</td><td>7,000.0 ns</td><td>2.12</td><td>0.36</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100</td><td>8000000</td><td>3,031.2 ns</td><td>343.01 ns</td><td>989.66 ns</td><td>2,900.0 ns</td><td>1.11</td><td>0.54</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100</td><td>8000000</td><td>4,745.9 ns</td><td>311.53 ns</td><td>908.74 ns</td><td>4,900.0 ns</td><td>1.75</td><td>0.69</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100</td><td>8000000</td><td>3,803.2 ns</td><td>411.83 ns</td><td>1,168.28 ns</td><td>3,500.0 ns</td><td>1.10</td><td>0.48</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100</td><td>8000000</td><td>4,656.6 ns</td><td>311.18 ns</td><td>912.63 ns</td><td>4,600.0 ns</td><td>1.34</td><td>0.49</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>0</td><td>132,879.4 ns</td><td>2,616.90 ns</td><td>4,225.81 ns</td><td>133,650.0 ns</td><td>1.00</td><td>0.04</td><td>538560 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>0</td><td>252,811.4 ns</td><td>5,025.28 ns</td><td>12,232.23 ns</td><td>249,300.0 ns</td><td>1.90</td><td>0.11</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>0</td><td>139,425.0 ns</td><td>2,742.15 ns</td><td>3,565.57 ns</td><td>138,750.0 ns</td><td>1.00</td><td>0.04</td><td>538560 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>0</td><td>238,692.4 ns</td><td>5,106.24 ns</td><td>14,402.23 ns</td><td>234,150.0 ns</td><td>1.71</td><td>0.11</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>8000000</td><td>124,767.7 ns</td><td>13,634.88 ns</td><td>38,679.90 ns</td><td>117,100.0 ns</td><td>1.10</td><td>0.48</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>8000000</td><td>188,041.8 ns</td><td>5,525.01 ns</td><td>16,116.70 ns</td><td>186,050.0 ns</td><td>1.65</td><td>0.51</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>8000000</td><td>140,900.0 ns</td><td>8,550.30 ns</td><td>23,550.01 ns</td><td>140,700.0 ns</td><td>1.03</td><td>0.25</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>8000000</td><td>199,738.1 ns</td><td>7,063.23 ns</td><td>20,491.71 ns</td><td>196,500.0 ns</td><td>1.46</td><td>0.29</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>0</td><td>1,501,811.5 ns</td><td>34,418.83 ns</td><td>99,306.19 ns</td><td>1,467,450.0 ns</td><td>1.00</td><td>0.09</td><td>2327216 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>0</td><td>2,464,193.8 ns</td><td>39,366.78 ns</td><td>38,663.44 ns</td><td>2,463,450.0 ns</td><td>1.65</td><td>0.10</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>0</td><td>1,734,476.5 ns</td><td>34,571.27 ns</td><td>55,826.16 ns</td><td>1,729,500.0 ns</td><td>1.00</td><td>0.04</td><td>2327216 B</td><td>1.00</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>0</td><td>2,313,707.7 ns</td><td>44,584.56 ns</td><td>37,230.13 ns</td><td>2,306,700.0 ns</td><td>1.34</td><td>0.05</td><td>-</td><td>0.00</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>8000000</td><td>676,495.4 ns</td><td>26,377.77 ns</td><td>72,208.71 ns</td><td>667,500.0 ns</td><td>1.01</td><td>0.15</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>8000000</td><td>1,030,132.5 ns</td><td>20,503.33 ns</td><td>44,572.55 ns</td><td>1,022,650.0 ns</td><td>1.54</td><td>0.17</td><td>-</td><td>NA</td>
+</tr><tr><td>HashSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>8000000</td><td>806,871.3 ns</td><td>21,404.47 ns</td><td>58,594.41 ns</td><td>802,400.0 ns</td><td>1.01</td><td>0.10</td><td>-</td><td>NA</td>
+</tr><tr><td>PooledSet_Add</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>8000000</td><td>1,036,409.5 ns</td><td>20,709.57 ns</td><td>47,583.69 ns</td><td>1,031,300.0 ns</td><td>1.29</td><td>0.11</td><td>-</td><td>NA</td>
+</tr></tbody></table>
+</body>
+</html>

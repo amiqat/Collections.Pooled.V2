@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<title>Collections.Pooled.Benchmarks.PooledQueue.Queue_Enqueue-20260303-002449</title>
+
+<style type="text/css">
+	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
+	td, th { padding: 6px 13px; border: 1px solid #ddd; text-align: right; }
+	tr { background-color: #fff; border-top: 1px solid #ccc; }
+	tr:nth-child(even) { background: #f8f8f8; }
+</style>
+</head>
+<body>
+<pre><code>
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.26200.7840/25H2/2025Update/HudsonValley2)
+Intel Core i9-14900HX 2.20GHz, 1 CPU, 32 logical and 24 physical cores
+.NET SDK 10.0.103
+  [Host]    : .NET 10.0.3 (10.0.3, 10.0.326.7603), X64 RyuJIT x86-64-v3
+  .NET 10.0 : .NET 10.0.3 (10.0.3, 10.0.326.7603), X64 RyuJIT x86-64-v3
+  .NET 8.0  : .NET 8.0.24 (8.0.24, 8.0.2426.7010), X64 RyuJIT x86-64-v3
+</code></pre>
+<pre><code></code></pre>
+
+<table>
+<thead><tr><th>Method </th><th>Job</th><th>Runtime</th><th>N</th><th>Type</th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Ratio</th><th>RatioSD</th><th>Gen0</th><th>Gen1</th><th>Gen2</th><th>Allocated</th><th>Alloc Ratio</th>
+</tr>
+</thead><tbody><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1000</td><td>Int</td><td>1.107 &mu;s</td><td>0.0221 &mu;s</td><td>0.0534 &mu;s</td><td>1.102 &mu;s</td><td>1.00</td><td>0.07</td><td>0.4444</td><td>-</td><td>-</td><td>8392 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1000</td><td>Int</td><td>1.161 &mu;s</td><td>0.0226 &mu;s</td><td>0.0222 &mu;s</td><td>1.168 &mu;s</td><td>1.05</td><td>0.05</td><td>0.0019</td><td>-</td><td>-</td><td>64 B</td><td>0.008</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1000</td><td>Int</td><td>1.558 &mu;s</td><td>0.0288 &mu;s</td><td>0.0480 &mu;s</td><td>1.555 &mu;s</td><td>1.00</td><td>0.04</td><td>0.4463</td><td>0.0076</td><td>-</td><td>8432 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1000</td><td>Int</td><td>1.248 &mu;s</td><td>0.0249 &mu;s</td><td>0.0461 &mu;s</td><td>1.242 &mu;s</td><td>0.80</td><td>0.04</td><td>0.0019</td><td>-</td><td>-</td><td>64 B</td><td>0.008</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1000</td><td>String</td><td>2.703 &mu;s</td><td>0.0502 &mu;s</td><td>0.0905 &mu;s</td><td>2.673 &mu;s</td><td>1.00</td><td>0.05</td><td>0.8774</td><td>0.0076</td><td>-</td><td>16568 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>1000</td><td>String</td><td>2.261 &mu;s</td><td>0.0444 &mu;s</td><td>0.0677 &mu;s</td><td>2.264 &mu;s</td><td>0.84</td><td>0.04</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.004</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1000</td><td>String</td><td>3.015 &mu;s</td><td>0.0329 &mu;s</td><td>0.0275 &mu;s</td><td>3.018 &mu;s</td><td>1.00</td><td>0.01</td><td>0.8812</td><td>0.0267</td><td>-</td><td>16608 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>1000</td><td>String</td><td>2.962 &mu;s</td><td>0.0529 &mu;s</td><td>0.0706 &mu;s</td><td>2.961 &mu;s</td><td>0.98</td><td>0.02</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.004</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>Int</td><td>11.677 &mu;s</td><td>0.3282 &mu;s</td><td>0.9311 &mu;s</td><td>11.548 &mu;s</td><td>1.01</td><td>0.11</td><td>6.9580</td><td>0.4272</td><td>-</td><td>131368 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>Int</td><td>11.126 &mu;s</td><td>0.1820 &mu;s</td><td>0.1421 &mu;s</td><td>11.086 &mu;s</td><td>0.96</td><td>0.07</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>Int</td><td>17.008 &mu;s</td><td>0.3366 &mu;s</td><td>0.8258 &mu;s</td><td>17.028 &mu;s</td><td>1.00</td><td>0.07</td><td>6.9580</td><td>1.7090</td><td>-</td><td>131408 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>Int</td><td>11.193 &mu;s</td><td>0.2163 &mu;s</td><td>0.2575 &mu;s</td><td>11.133 &mu;s</td><td>0.66</td><td>0.04</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>String</td><td>58.417 &mu;s</td><td>1.1429 &mu;s</td><td>1.2703 &mu;s</td><td>57.912 &mu;s</td><td>1.00</td><td>0.03</td><td>41.6260</td><td>41.6260</td><td>41.6260</td><td>262438 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>10000</td><td>String</td><td>24.910 &mu;s</td><td>0.3030 &mu;s</td><td>0.2366 &mu;s</td><td>25.002 &mu;s</td><td>0.43</td><td>0.01</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>String</td><td>64.042 &mu;s</td><td>1.2704 &mu;s</td><td>1.8622 &mu;s</td><td>63.799 &mu;s</td><td>1.00</td><td>0.04</td><td>41.6260</td><td>41.6260</td><td>41.6260</td><td>262478 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>10000</td><td>String</td><td>28.639 &mu;s</td><td>0.4767 &mu;s</td><td>0.3981 &mu;s</td><td>28.573 &mu;s</td><td>0.45</td><td>0.01</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>Int</td><td>156.686 &mu;s</td><td>6.8845 &mu;s</td><td>19.9733 &mu;s</td><td>150.118 &mu;s</td><td>1.01</td><td>0.17</td><td>96.6797</td><td>90.0879</td><td>89.8438</td><td>1049530 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>Int</td><td>108.279 &mu;s</td><td>1.5451 &mu;s</td><td>1.3697 &mu;s</td><td>108.041 &mu;s</td><td>0.70</td><td>0.08</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>Int</td><td>233.407 &mu;s</td><td>10.7331 &mu;s</td><td>31.1385 &mu;s</td><td>220.090 &mu;s</td><td>1.02</td><td>0.18</td><td>117.6758</td><td>110.8398</td><td>110.5957</td><td>1049700 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>Int</td><td>112.963 &mu;s</td><td>2.2187 &mu;s</td><td>3.1103 &mu;s</td><td>112.485 &mu;s</td><td>0.49</td><td>0.06</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>String</td><td>459.865 &mu;s</td><td>23.0900 &mu;s</td><td>66.2496 &mu;s</td><td>447.719 &mu;s</td><td>1.02</td><td>0.20</td><td>234.3750</td><td>227.5391</td><td>227.5391</td><td>2098568 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 10.0</td><td>.NET 10.0</td><td>100000</td><td>String</td><td>237.106 &mu;s</td><td>3.8978 &mu;s</td><td>3.0431 &mu;s</td><td>236.796 &mu;s</td><td>0.53</td><td>0.07</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr><tr><td>QueueEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>String</td><td>536.056 &mu;s</td><td>23.6998 &mu;s</td><td>67.9991 &mu;s</td><td>520.028 &mu;s</td><td>1.02</td><td>0.18</td><td>212.8906</td><td>206.0547</td><td>206.0547</td><td>2098732 B</td><td>1.000</td>
+</tr><tr><td>PooledEnqueue</td><td>.NET 8.0</td><td>.NET 8.0</td><td>100000</td><td>String</td><td>289.416 &mu;s</td><td>5.4706 &mu;s</td><td>5.1172 &mu;s</td><td>288.360 &mu;s</td><td>0.55</td><td>0.07</td><td>-</td><td>-</td><td>-</td><td>64 B</td><td>0.000</td>
+</tr></tbody></table>
+</body>
+</html>
