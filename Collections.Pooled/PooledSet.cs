@@ -799,11 +799,6 @@ namespace Collections.Pooled
         /// <param name="other">enumerable with items to remove</param>
         public void ExceptWith(ReadOnlySpan<T> other)
         {
-            if (other == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-            }
-
             // this is already the empty set; return
             if (_count == 0)
             {
