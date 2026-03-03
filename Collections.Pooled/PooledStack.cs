@@ -224,6 +224,11 @@ namespace Collections.Pooled
         public int Count => _size;
 
         /// <summary>
+        /// Gets the number of elements that the <see cref="PooledStack{T}"/> can contain.
+        /// </summary>
+        public int Capacity => _array.Length;
+
+        /// <summary>
         /// Returns the ClearMode behavior for the collection, denoting whether values are
         /// cleared from internal arrays before returning them to the pool.
         /// </summary>
@@ -437,6 +442,58 @@ namespace Collections.Pooled
         }
 
         /// <summary>
+        /// Sets the capacity of this stack to hold up to 'capacity' entries without any further expansion of its backing storage.
+        /// </summary>
+        public void TrimExcess(int capacity)
+        {
+            if (capacity < _size)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+            }
+
+            if (capacity == _array.Length)
+                return;
+
+            if (capacity < _array.Length)
+            {
+                var newArray = _pool.Rent(capacity);
+                if (newArray.Length < _array.Length)
+                {
+                    Array.Copy(_array, newArray, _size);
+                    ReturnArray(replaceWith: newArray);
+                    _version++;
+                }
+                else
+                {
+                    _pool.Return(newArray);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensures that the capacity of this stack is at least the specified <paramref name="capacity"/>.
+        /// If the current capacity of the stack is less than specified <paramref name="capacity"/>,
+        /// the capacity is increased by continuously twice current capacity until it is at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
+        /// <returns>The new capacity of this stack.</returns>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (_array.Length < capacity)
+            {
+                Grow(capacity);
+                _version++;
+            }
+            return _array.Length;
+        }
+
+        /// <summary>
         /// Returns the top object on the stack without removing it.  If the stack
         /// is empty, Peek throws an InvalidOperationException.
         /// </summary>
@@ -539,12 +596,30 @@ namespace Collections.Pooled
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushWithResize(T item)
         {
-            var newArray = _pool.Rent((_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
-            Array.Copy(_array, newArray, _size);
-            ReturnArray(replaceWith: newArray);
+            Debug.Assert(_size == _array.Length);
+            Grow(_size + 1);
             _array[_size] = item;
             _version++;
             _size++;
+        }
+
+        /// <summary>
+        /// Increase the capacity of this stack to at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        private void Grow(int capacity)
+        {
+            Debug.Assert(_array.Length < capacity);
+
+            int newCapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
+            // Allow the stack to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Array.MaxLength is not available on netstandard2.1, use 0x7FEFFFFF.
+            const int MaxArrayLength = 0x7FEFFFFF;
+            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if (newCapacity < capacity) newCapacity = capacity;
+
+            var newArray = _pool.Rent(newCapacity);
+            Array.Copy(_array, newArray, _size);
+            ReturnArray(replaceWith: newArray);
         }
 
         /// <summary>

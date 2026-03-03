@@ -575,8 +575,9 @@ namespace Collections.Pooled
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AddWithResize(T item)
         {
+            Debug.Assert(_size == _items.Length);
             int size = _size;
-            EnsureCapacity(size + 1);
+            Grow(size + 1);
             _size = size + 1;
             _items[size] = item;
         }
@@ -791,17 +792,34 @@ namespace Collections.Pooled
         /// capacity is increased to twice the current capacity or to min,
         /// whichever is larger.
         /// </summary>
-        private void EnsureCapacity(int min)
+        public int EnsureCapacity(int capacity)
         {
-            if (_items.Length < min)
+            if (capacity < 0)
             {
-                int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
-                // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-                // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
-                if (newCapacity < min) newCapacity = min;
-                Capacity = newCapacity;
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
+            if (_items.Length < capacity)
+            {
+                Grow(capacity);
+                _version++;
+            }
+            return _items.Length;
+        }
+
+        /// <summary>
+        /// Increase the capacity of this list to at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        private void Grow(int capacity)
+        {
+            Debug.Assert(_items.Length < capacity);
+
+            int newCapacity = _items.Length == 0 ? DefaultCapacity : _items.Length * 2;
+            // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if (newCapacity < capacity) newCapacity = capacity;
+            Capacity = newCapacity;
         }
 
         public bool Exists(Func<T, bool> match)
@@ -1056,7 +1074,7 @@ namespace Collections.Pooled
                     ExceptionResource.ArgumentOutOfRange_ListInsert);
             }
 
-            if (_size == _items.Length) EnsureCapacity(_size + 1);
+            if (_size == _items.Length) Grow(_size + 1);
             if (index < _size)
             {
                 Array.Copy(_items, index, _items, index + 1, _size - index);
@@ -1104,7 +1122,10 @@ namespace Collections.Pooled
                     int count = c.Count;
                     if (count > 0)
                     {
-                        EnsureCapacity(_size + count);
+                        if (_items.Length - _size < count)
+                        {
+                            Grow(checked(_size + count));
+                        }
                         if (index < _size)
                         {
                             Array.Copy(_items, index, _items, index + count, _size - index);
@@ -1179,7 +1200,10 @@ namespace Collections.Pooled
 
         private Span<T> InsertSpan(int index, int count, bool clearOutput)
         {
-            EnsureCapacity(_size + count);
+            if (_items.Length - _size < count)
+            {
+                Grow(checked(_size + count));
+            }
 
             if (index < _size)
             {
@@ -1513,6 +1537,49 @@ namespace Collections.Pooled
             {
                 Capacity = _size;
             }
+        }
+
+        /// <summary>
+        /// Sets the capacity of this list to the specified value if it is less than the current capacity.
+        /// </summary>
+        public void TrimExcess(int capacity)
+        {
+            if (capacity < Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+            }
+
+            if (capacity < _items.Length)
+            {
+                Capacity = capacity;
+            }
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of a range of elements in the source <see cref="PooledList{T}"/>.
+        /// </summary>
+        /// <param name="start">The zero-based index at which the range starts.</param>
+        /// <param name="length">The number of elements in the range.</param>
+        /// <returns>A shallow copy of a range of elements in the source <see cref="PooledList{T}"/>.</returns>
+        public PooledList<T> Slice(int start, int length)
+        {
+            if (start < 0 || length < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(
+                    start < 0 ? ExceptionArgument.start : ExceptionArgument.length,
+                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (_size - start < length)
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+            }
+
+            var list = new PooledList<T>(length, _clearOnFree ? ClearMode.Always : ClearMode.Never, _pool);
+            Array.Copy(_items, start, list._items, 0, length);
+            list._size = length;
+            return list;
         }
 
         public bool TrueForAll(Func<T, bool> match)

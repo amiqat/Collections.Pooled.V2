@@ -119,7 +119,7 @@ namespace Collections.Pooled
         /// </summary>
         public PooledSet(ClearMode clearMode, IEqualityComparer<T> comparer)
         {
-            _comparer = comparer ?? EqualityComparer<T>.Default;
+            _comparer = InitializeComparer(comparer);
             _lastIndex = 0;
             _count = 0;
             _freeList = -1;
@@ -369,31 +369,7 @@ namespace Collections.Pooled
         /// <param name="item">item to check for containment</param>
         /// <returns>true if item contained; false if not</returns>
         public bool Contains(T item)
-        {
-            if (_buckets != null)
-            {
-                int collisionCount = 0;
-                int hashCode = InternalGetHashCode(item);
-                Slot[] slots = _slots;
-                // see note at "HashSet" level describing why "- 1" appears in for loop
-                for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].next)
-                {
-                    if (slots[i].hashCode == hashCode && _comparer.Equals(slots[i].value, item))
-                    {
-                        return true;
-                    }
-
-                    if (collisionCount >= _size)
-                    {
-                        // The chain of entries forms a loop, which means a concurrent update has happened.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                    }
-                    collisionCount++;
-                }
-            }
-            // either _buckets is null or wasn't found
-            return false;
-        }
+            => FindItemIndex(item) >= 0;
 
         /// <summary>
         /// Copy items in this hashset to array, starting at arrayIndex
@@ -412,52 +388,106 @@ namespace Collections.Pooled
         {
             if (_buckets != null)
             {
-                int hashCode = InternalGetHashCode(item);
-                int bucket = hashCode % _size;
                 int last = -1;
-                int collisionCount = 0;
+                uint collisionCount = 0;
                 Slot[] slots = _slots;
-                for (int i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
+
+                IEqualityComparer<T> comparer = _comparer;
+                int hashCode;
+
+                if (comparer == null)
                 {
-                    if (slots[i].hashCode == hashCode && _comparer.Equals(slots[i].value, item))
+                    hashCode = item.GetHashCode() & Lower31BitMask;
+                    ref int bucket = ref GetBucketRef(hashCode);
+                    for (int i = bucket - 1; i >= 0; last = i, i = slots[i].next)
                     {
-                        if (last < 0)
+                        if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, item))
                         {
-                            // first iteration; update buckets
-                            _buckets[bucket] = slots[i].next + 1;
-                        }
-                        else
-                        {
-                            // subsequent iterations; update 'next' pointers
-                            slots[last].next = slots[i].next;
-                        }
-                        slots[i].hashCode = -1;
-                        if (_clearOnFree)
-                        {
-                            slots[i].value = default;
-                        }
-                        slots[i].next = _freeList;
+                            if (last < 0)
+                            {
+                                // first iteration; update buckets
+                                bucket = slots[i].next + 1;
+                            }
+                            else
+                            {
+                                // subsequent iterations; update 'next' pointers
+                                slots[last].next = slots[i].next;
+                            }
+                            slots[i].hashCode = -1;
+                            if (_clearOnFree)
+                            {
+                                slots[i].value = default;
+                            }
+                            slots[i].next = _freeList;
 
-                        _count--;
-                        _version++;
-                        if (_count == 0)
-                        {
-                            _lastIndex = 0;
-                            _freeList = -1;
+                            _count--;
+                            _version++;
+                            if (_count == 0)
+                            {
+                                _lastIndex = 0;
+                                _freeList = -1;
+                            }
+                            else
+                            {
+                                _freeList = i;
+                            }
+                            return true;
                         }
-                        else
+
+                        collisionCount++;
+                        if (collisionCount > (uint)slots.Length)
                         {
-                            _freeList = i;
+                            // The chain of entries forms a loop, which means a concurrent update has happened.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                         }
-                        return true;
                     }
-
-                    if (collisionCount >= _size)
+                }
+                else
+                {
+                    hashCode = item is null ? 0 : comparer.GetHashCode(item) & Lower31BitMask;
+                    ref int bucket = ref GetBucketRef(hashCode);
+                    for (int i = bucket - 1; i >= 0; last = i, i = slots[i].next)
                     {
-                        // The chain of entries forms a loop, which means a concurrent update has happened.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, item))
+                        {
+                            if (last < 0)
+                            {
+                                // first iteration; update buckets
+                                bucket = slots[i].next + 1;
+                            }
+                            else
+                            {
+                                // subsequent iterations; update 'next' pointers
+                                slots[last].next = slots[i].next;
+                            }
+                            slots[i].hashCode = -1;
+                            if (_clearOnFree)
+                            {
+                                slots[i].value = default;
+                            }
+                            slots[i].next = _freeList;
+
+                            _count--;
+                            _version++;
+                            if (_count == 0)
+                            {
+                                _lastIndex = 0;
+                                _freeList = -1;
+                            }
+                            else
+                            {
+                                _freeList = i;
+                            }
+                            return true;
+                        }
+
+                        collisionCount++;
+                        if (collisionCount > (uint)slots.Length)
+                        {
+                            // The chain of entries forms a loop, which means a concurrent update has happened.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
                     }
-                    collisionCount++;
                 }
             }
             // either _buckets is null or wasn't found
@@ -468,6 +498,11 @@ namespace Collections.Pooled
         /// Number of elements in this set
         /// </summary>
         public int Count => _count;
+
+        /// <summary>
+        /// Gets the total number of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _size;
 
         /// <summary>
         /// Returns the ClearMode behavior for the collection, denoting whether values are
@@ -511,7 +546,7 @@ namespace Collections.Pooled
             }
 
             info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
-            info.AddValue(ComparerName, _comparer, typeof(IEqualityComparer<T>));
+            info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
             info.AddValue(CapacityName, _buckets == null ? 0 : _size);
 
             if (_buckets != null)
@@ -540,7 +575,7 @@ namespace Collections.Pooled
             }
 
             int capacity = _siInfo.GetInt32(CapacityName);
-            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>));
+            _comparer = InitializeComparer((IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>)));
             _freeList = -1;
 
             if (capacity != 0)
@@ -598,7 +633,7 @@ namespace Collections.Pooled
         {
             if (_buckets != null)
             {
-                int i = InternalIndexOf(equalValue);
+                int i = FindItemIndex(equalValue);
                 if (i >= 0)
                 {
                     actualValue = _slots[i].value;
@@ -1557,7 +1592,7 @@ namespace Collections.Pooled
         /// Gets the IEqualityComparer that is used to determine equality of keys for 
         /// the HashSet.
         /// </summary>
-        public IEqualityComparer<T> Comparer => _comparer;
+        public IEqualityComparer<T> Comparer => _comparer ?? EqualityComparer<T>.Default;
 
         /// <summary>
         /// Ensures that the hash set can hold up to 'capacity' entries without any further expansion of its backing storage.
@@ -1651,6 +1686,54 @@ namespace Collections.Pooled
             }
         }
 
+        /// <summary>
+        /// Sets the capacity of this set to hold up to 'capacity' entries without any further expansion of its backing storage.
+        /// </summary>
+        public void TrimExcess(int capacity)
+        {
+            if (capacity < _count)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+
+            int newSize = HashHelpers.GetPrime(capacity);
+            if (newSize >= _size)
+                return;
+
+            Slot[] newSlots = s_slotPool.Rent(newSize);
+            int[] newBuckets = s_bucketPool.Rent(newSize);
+
+            if (newSlots.Length >= _slots.Length || newBuckets.Length >= _buckets.Length)
+            {
+                s_slotPool.Return(newSlots);
+                s_bucketPool.Return(newBuckets);
+                return;
+            }
+
+            Array.Clear(newBuckets, 0, newBuckets.Length);
+
+            int newIndex = 0;
+            for (int i = 0; i < _lastIndex; i++)
+            {
+                if (_slots[i].hashCode >= 0)
+                {
+                    newSlots[newIndex] = _slots[i];
+
+                    int bucket = newSlots[newIndex].hashCode % newSize;
+                    newSlots[newIndex].next = newBuckets[bucket] - 1;
+                    newBuckets[bucket] = newIndex + 1;
+
+                    newIndex++;
+                }
+            }
+
+            _lastIndex = newIndex;
+            ReturnArrays();
+            _slots = newSlots;
+            _buckets = newBuckets;
+            _size = newSize;
+            _freeList = -1;
+            _version++;
+        }
+
         #endregion
 
         #region Helper methods
@@ -1676,6 +1759,22 @@ namespace Collections.Pooled
             _slots = s_slotPool.Rent(_size);
 
             return _size;
+        }
+
+        private static IEqualityComparer<T> InitializeComparer(IEqualityComparer<T> comparer)
+        {
+            if (typeof(T).IsValueType && (comparer == null || comparer == EqualityComparer<T>.Default))
+            {
+                return null;
+            }
+
+            return comparer ?? EqualityComparer<T>.Default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref int GetBucketRef(int hashCode)
+        {
+            return ref _buckets[(uint)hashCode % (uint)_size];
         }
 
         /// <summary>
@@ -1795,29 +1894,59 @@ namespace Collections.Pooled
         /// <param name="value">value to find</param>
         /// <returns></returns>
         private bool AddIfNotPresent(T value)
+            => AddIfNotPresent(value, out _);
+
+        private bool AddIfNotPresent(T value, out int location)
         {
             if (_buckets == null)
             {
                 Initialize(0);
             }
 
-            int hashCode = InternalGetHashCode(value);
-            int bucket = hashCode % _size;
-            int collisionCount = 0;
             Slot[] slots = _slots;
-            for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
-            {
-                if (slots[i].hashCode == hashCode && _comparer.Equals(slots[i].value, value))
-                {
-                    return false;
-                }
+            IEqualityComparer<T> comparer = _comparer;
+            int hashCode;
+            uint collisionCount = 0;
+            ref int bucket = ref _buckets[0];
 
-                if (collisionCount >= _size)
+            if (comparer == null)
+            {
+                hashCode = value.GetHashCode() & Lower31BitMask;
+                bucket = ref GetBucketRef(hashCode);
+                for (int i = bucket - 1; i >= 0; i = slots[i].next)
                 {
-                    // The chain of entries forms a loop, which means a concurrent update has happened.
-                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, value))
+                    {
+                        location = i;
+                        return false;
+                    }
+
+                    collisionCount++;
+                    if (collisionCount > (uint)slots.Length)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
                 }
-                collisionCount++;
+            }
+            else
+            {
+                Debug.Assert(comparer != null);
+                hashCode = value is null ? 0 : comparer.GetHashCode(value) & Lower31BitMask;
+                bucket = ref GetBucketRef(hashCode);
+                for (int i = bucket - 1; i >= 0; i = slots[i].next)
+                {
+                    if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, value))
+                    {
+                        location = i;
+                        return false;
+                    }
+
+                    collisionCount++;
+                    if (collisionCount > (uint)slots.Length)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
             }
 
             int index;
@@ -1831,20 +1960,20 @@ namespace Collections.Pooled
                 if (_lastIndex == _size)
                 {
                     IncreaseCapacity();
-                    // this will change during resize
                     slots = _slots;
-                    bucket = hashCode % _size;
+                    bucket = ref GetBucketRef(hashCode);
                 }
                 index = _lastIndex;
                 _lastIndex++;
             }
+
             slots[index].hashCode = hashCode;
             slots[index].value = value;
-            slots[index].next = _buckets[bucket] - 1;
-            _buckets[bucket] = index + 1;
+            slots[index].next = bucket - 1;
+            bucket = index + 1;
             _count++;
             _version++;
-
+            location = index;
             return true;
         }
 
@@ -1856,9 +1985,10 @@ namespace Collections.Pooled
 
 #if DEBUG
             Debug.Assert(InternalGetHashCode(value) == hashCode);
+            IEqualityComparer<T> comparer = _comparer ?? EqualityComparer<T>.Default;
             for (int i = _buckets[bucket] - 1; i >= 0; i = _slots[i].next)
             {
-                Debug.Assert(!_comparer.Equals(_slots[i].value, value));
+                Debug.Assert(!comparer.Equals(_slots[i].value, value));
             }
 #endif
 
@@ -2086,29 +2216,7 @@ namespace Collections.Pooled
         /// <param name="item"></param>
         /// <returns></returns>
         private int InternalIndexOf(T item)
-        {
-            Debug.Assert(_buckets != null, "_buckets was null; callers should check first");
-
-            int collisionCount = 0;
-            int hashCode = InternalGetHashCode(item);
-            Slot[] slots = _slots;
-            for (int i = _buckets[hashCode % _size] - 1; i >= 0; i = slots[i].next)
-            {
-                if ((slots[i].hashCode) == hashCode && _comparer.Equals(slots[i].value, item))
-                {
-                    return i;
-                }
-
-                if (collisionCount >= _size)
-                {
-                    // The chain of entries forms a loop, which means a concurrent update has happened.
-                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                }
-                collisionCount++;
-            }
-            // wasn't found
-            return -1;
-        }
+            => FindItemIndex(item);
 
         /// <summary>
         /// if other is a set, we can assume it doesn't have duplicate elements, so use this
@@ -2293,54 +2401,54 @@ namespace Collections.Pooled
         /// <param name="location"></param>
         /// <returns></returns>
         private bool AddOrGetLocation(T value, out int location)
+            => AddIfNotPresent(value, out location);
+
+        private int FindItemIndex(T item)
         {
-            Debug.Assert(_buckets != null, "_buckets is null, callers should have checked");
+            if (_buckets != null)
+            {
+                Slot[] slots = _slots;
+                uint collisionCount = 0;
+                IEqualityComparer<T> comparer = _comparer;
 
-            int hashCode = InternalGetHashCode(value);
-            int bucket = hashCode % _size;
-            int collisionCount = 0;
-            Slot[] slots = _slots;
-            for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
-            {
-                if (slots[i].hashCode == hashCode && _comparer.Equals(slots[i].value, value))
+                if (comparer == null)
                 {
-                    location = i;
-                    return false; //already present
-                }
+                    int hashCode = item.GetHashCode() & Lower31BitMask;
+                    for (int i = GetBucketRef(hashCode) - 1; i >= 0; i = slots[i].next)
+                    {
+                        if (slots[i].hashCode == hashCode && EqualityComparer<T>.Default.Equals(slots[i].value, item))
+                        {
+                            return i;
+                        }
 
-                if (collisionCount >= _size)
-                {
-                    // The chain of entries forms a loop, which means a concurrent update has happened.
-                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        collisionCount++;
+                        if (collisionCount > (uint)slots.Length)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                    }
                 }
-                collisionCount++;
-            }
-            int index;
-            if (_freeList >= 0)
-            {
-                index = _freeList;
-                _freeList = slots[index].next;
-            }
-            else
-            {
-                if (_lastIndex == _size)
+                else
                 {
-                    IncreaseCapacity();
-                    // this will change during resize
-                    slots = _slots;
-                    bucket = hashCode % _size;
+                    Debug.Assert(comparer != null);
+                    int hashCode = item is null ? 0 : comparer.GetHashCode(item) & Lower31BitMask;
+                    for (int i = GetBucketRef(hashCode) - 1; i >= 0; i = slots[i].next)
+                    {
+                        if (slots[i].hashCode == hashCode && comparer.Equals(slots[i].value, item))
+                        {
+                            return i;
+                        }
+
+                        collisionCount++;
+                        if (collisionCount > (uint)slots.Length)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                    }
                 }
-                index = _lastIndex;
-                _lastIndex++;
             }
-            slots[index].hashCode = hashCode;
-            slots[index].value = value;
-            slots[index].next = _buckets[bucket] - 1;
-            _buckets[bucket] = index + 1;
-            _count++;
-            _version++;
-            location = index;
-            return true;
+
+            return -1;
         }
 
         /// <summary>
@@ -2519,54 +2627,58 @@ namespace Collections.Pooled
         /// <returns></returns>
         internal static bool PooledSetEquals(PooledSet<T> set1, PooledSet<T> set2, IEqualityComparer<T> comparer)
         {
-            // handle null cases first
-            if (set1 == null)
+            // If they're the exact same instance, they're equal.
+            if (ReferenceEquals(set1, set2))
             {
-                return (set2 == null);
+                return true;
             }
-            else if (set2 == null)
+
+            // They're not both null, so if either is null, they're not equal.
+            if (set1 == null || set2 == null)
             {
-                // set1 != null
                 return false;
             }
 
-            // all comparers are the same; this is faster
+            // If both sets use the same comparer, they're equal if they're the same
+            // size and one is a "subset" of the other.
             if (AreEqualityComparersEqual(set1, set2))
             {
-                if (set1.Count != set2.Count)
+                return set1.Count == set2.Count && set2.IsSubsetOfPooledSetWithSameComparer(set1);
+            }
+
+            // Otherwise, do an O(N^2) match.
+            foreach (T set2Item in set2)
+            {
+                bool found = false;
+                foreach (T set1Item in set1)
+                {
+                    if (comparer.Equals(set2Item, set1Item))
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
                 {
                     return false;
                 }
-                // suffices to check subset
-                foreach (T item in set2)
-                {
-                    if (!set1.Contains(item))
-                    {
-                        return false;
-                    }
-                }
-                return true;
             }
-            else
-            {  // n^2 search because items are hashed according to their respective ECs
-                foreach (T set2Item in set2)
+
+            return true;
+        }
+
+        private bool IsSubsetOfPooledSetWithSameComparer(PooledSet<T> other)
+        {
+            foreach (T item in this)
+            {
+                if (!other.Contains(item))
                 {
-                    bool found = false;
-                    foreach (T set1Item in set1)
-                    {
-                        if (comparer.Equals(set2Item, set1Item))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
             }
+
+            return true;
         }
 
         /// <summary>
@@ -2604,7 +2716,14 @@ namespace Collections.Pooled
             {
                 return 0;
             }
-            return _comparer.GetHashCode(item) & Lower31BitMask;
+
+            IEqualityComparer<T> comparer = _comparer;
+            if (comparer == null)
+            {
+                return item.GetHashCode() & Lower31BitMask;
+            }
+
+            return comparer.GetHashCode(item) & Lower31BitMask;
         }
 
         /// <summary>

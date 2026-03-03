@@ -350,6 +350,11 @@ namespace Collections.Pooled
         public int Count => _count - _freeCount;
 
         /// <summary>
+        /// Gets the total number of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _size;
+
+        /// <summary>
         /// Returns the ClearMode behavior for the collection, denoting whether values are
         /// cleared from internal arrays before returning them to the pool.
         /// </summary>

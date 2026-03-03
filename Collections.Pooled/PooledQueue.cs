@@ -32,9 +32,6 @@ namespace Collections.Pooled
     [Serializable]
     public class PooledQueue<T> : IEnumerable<T>, ICollection, IReadOnlyCollection<T>, IDisposable, IDeserializationCallback
     {
-        private const int MinimumGrow = 4;
-        private const int GrowFactor = 200;  // double each time
-
         [NonSerialized]
         private ArrayPool<T> _pool;
         [NonSerialized]
@@ -227,6 +224,11 @@ namespace Collections.Pooled
         public int Count => _size;
 
         /// <summary>
+        /// Gets the number of elements that the <see cref="PooledQueue{T}"/> can contain.
+        /// </summary>
+        public int Capacity => _array.Length;
+
+        /// <summary>
         /// Returns the ClearMode behavior for the collection, denoting whether values are
         /// cleared from internal arrays before returning them to the pool.
         /// </summary>
@@ -366,12 +368,7 @@ namespace Collections.Pooled
         {
             if (_size == _array.Length)
             {
-                int newcapacity = (int)(_array.Length * (long)GrowFactor / 100);
-                if (newcapacity < _array.Length + MinimumGrow)
-                {
-                    newcapacity = _array.Length + MinimumGrow;
-                }
-                SetCapacity(newcapacity);
+                Grow(_size + 1);
             }
 
             _array[_tail] = item;
@@ -626,6 +623,69 @@ namespace Collections.Pooled
             {
                 SetCapacity(_size);
             }
+        }
+
+        /// <summary>
+        /// Sets the capacity of this queue to hold up to 'capacity' entries without any further expansion of its backing storage.
+        /// </summary>
+        public void TrimExcess(int capacity)
+        {
+            if (capacity < _size)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+            }
+
+            if (capacity < _array.Length)
+            {
+                SetCapacity(capacity);
+            }
+        }
+
+        /// <summary>
+        /// Ensures that the capacity of this queue is at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        /// <param name="capacity">The minimum capacity to ensure.</param>
+        /// <returns>The new capacity of this queue.</returns>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
+                    ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            if (_array.Length < capacity)
+            {
+                Grow(capacity);
+                _version++;
+            }
+            return _array.Length;
+        }
+
+        /// <summary>
+        /// Increase the capacity of this queue to at least the specified <paramref name="capacity"/>.
+        /// </summary>
+        private void Grow(int capacity)
+        {
+            Debug.Assert(_array.Length < capacity);
+
+            const int GrowFactor = 2;
+            const int MinimumGrow = 4;
+
+            int newCapacity = GrowFactor * _array.Length;
+
+            // Allow the queue to grow to maximum possible capacity (~2G elements) before encountering overflow.
+            // Array.MaxLength is not available on netstandard2.1, use 0x7FEFFFFF.
+            const int MaxArrayLength = 0x7FEFFFFF;
+            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+
+            // Ensure minimum growth is respected.
+            newCapacity = Math.Max(newCapacity, _array.Length + MinimumGrow);
+
+            // If the computed capacity is still less than specified, set to the original argument.
+            if (newCapacity < capacity) newCapacity = capacity;
+
+            SetCapacity(newCapacity);
         }
 
         private void ReturnArray(T[] replaceWith)

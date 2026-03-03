@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Collections.Pooled
@@ -14,50 +12,31 @@ namespace Collections.Pooled
     /// <typeparam name="T"></typeparam>
     internal sealed class PooledSetEqualityComparer<T> : IEqualityComparer<PooledSet<T>>
     {
-        private readonly IEqualityComparer<T> _comparer;
-
-        public PooledSetEqualityComparer()
-        {
-            _comparer = EqualityComparer<T>.Default;
-        }
-
-        // using m_comparer to keep equals properties intact; don't want to choose one of the comparers
         public bool Equals(PooledSet<T> x, PooledSet<T> y)
-        {
-            return PooledSet<T>.PooledSetEquals(x, y, _comparer);
-        }
+            => PooledSet<T>.PooledSetEquals(x, y, EqualityComparer<T>.Default);
 
         public int GetHashCode(PooledSet<T> obj)
         {
-            int hashCode = 0;
+            int hashCode = 0; // default to 0 for null/empty set
+
             if (obj != null)
             {
                 foreach (T t in obj)
                 {
-                    hashCode ^= (_comparer.GetHashCode(t) & 0x7FFFFFFF);
+                    if (t != null)
+                    {
+                        hashCode ^= t.GetHashCode(); // same hashcode as default comparer
+                    }
                 }
-            } // else returns hashcode of 0 for null hashsets
+            }
+
             return hashCode;
         }
 
-        // Equals method for the comparer itself. 
-        public override bool Equals(object obj)
-        {
-            if (obj is PooledSetEqualityComparer<T> comparer)
-            {
-                return (_comparer == comparer._comparer);
-            }
-            else if (obj is IEqualityComparer<T> ieq)
-            {
-                return _comparer == ieq;
-            }
-            return false;
-        }
+        // Equals method for the comparer itself.
+        public override bool Equals(object obj) => obj is PooledSetEqualityComparer<T>;
 
-        public override int GetHashCode()
-        {
-            return _comparer.GetHashCode();
-        }
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
     }
 }
 
